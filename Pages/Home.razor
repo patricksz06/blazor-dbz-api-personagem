@@ -1,0 +1,85 @@
+﻿@page "/"
+@inject HttpClient Http
+@using BlazorDbzPersonagem.Models
+
+<PageTitle>Dragon Ball API</PageTitle>
+
+<h3>Buscar Personagem Dragon Ball</h3>
+
+<div class="mb-3" style="max-width: 300px;">
+    <label for="charId" class="form-label">ID do Personagem:</label>
+    <div class="input-group">
+        <input type="number" id="charId" class="form-control" @bind="searchId" min="1" />
+        <button class="btn btn-primary" @onclick="BuscarPersonagem">Buscar</button>
+    </div>
+</div>
+
+@if (isLoading)
+{
+    <p><em>Carregando dados...</em></p>
+}
+else if (errorMessage != null)
+{
+    <p class="text-danger">@errorMessage</p>
+}
+else if (personagem != null)
+{
+    <div class="card" style="max-width: 400px;">
+        <div class="card-body">
+            <h4 class="card-title">Informações do Personagem</h4>
+            <p><strong>Nome:</strong> @personagem.Name</p>
+            <p><strong>Planeta de Origem:</strong> @(personagem.OriginPlanet?.Name ?? "Desconhecido")</p>
+            
+            <p><strong>Transformações:</strong></p>
+            @if (personagem.Transformations != null && personagem.Transformations.Any())
+            {
+                <ul>
+                    @foreach (var trans in personagem.Transformations)
+                    {
+                        <li>@trans.Name</li>
+                    }
+                </ul>
+            }
+            else
+            {
+                <p>Nenhuma transformação encontrada.</p>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private int searchId = 1;
+    private Character? personagem;
+    private bool isLoading = false;
+    private string? errorMessage;
+
+    private async Task BuscarPersonagem()
+    {
+        isLoading = true;
+        errorMessage = null;
+        personagem = null;
+
+        try
+        {
+            var response = await Http.GetAsync($"https://dragonball-api.com/api/characters/{searchId}");
+            
+            if (response.IsSuccessStatusCode)
+            {
+                personagem = await response.Content.ReadFromJsonAsync<Character>();
+            }
+            else
+            {
+                errorMessage = "Personagem não encontrado.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erro ao buscar personagem: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}
